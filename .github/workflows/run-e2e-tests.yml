@@ -25,6 +25,7 @@ jobs:
     - name: start up local db
       run: make local-db
     - name: Check db readiness
-      run: python ./tests/e2e/db_check.py
+      run: python tests/e2e/db_check.py
+      shell: sh
     - name: Run tests
       run: pytest tests/e2e
