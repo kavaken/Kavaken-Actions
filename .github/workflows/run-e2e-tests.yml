@@ -1,0 +1,12 @@
+name: End to end tests
+on:
+  workflow_call:
+  workflow_dispatch:
+jobs:
+  end-to-end-tests:
+    runs-on: ubuntu-latest
+    steps:
+    - name: start up local db
+      run: pip install --upgrade pip
+    - name: Check db readiness
+      run: python tests/e2e/db_check.py
