@@ -1,11 +1,8 @@
 name: Code Quality
-on:
-  workflow_call:
-  workflow_dispatch:
-jobs:
-  continuous-integration:
-    runs-on: ubuntu-latest
-    steps:
+description: 'Run code quality checks'
+runs:
+  using: 'composite'
+  steps:
     - uses: actions/checkout@v3
     - uses: actions/setup-python@v4
       with:
