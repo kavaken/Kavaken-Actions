@@ -11,19 +11,28 @@ runs:
         cache-dependency-path: '*requirements.txt'
     - name: Upgrade pip
       run: pip install --upgrade pip
+      shell: bash
     - name: Install wheel
       run: pip install wheel
+      shell: bash
     - name: Install Requirements
       run: pip install -r requirements.txt
+      shell: bash
     - name: Install Dev-Test Requirements
       run: pip install -r dev_requirements.txt
+      shell: bash
     - name: Local Install
       run: make local-install
+      shell: bash
     - name: Run format
       run: make check-format
+      shell: bash
     - name: Run lint
       run: make lint
+      shell: bash
     - name: Run security
       run: make security-baseline
+      shell: bash
     - name: Run static analysis
       run: make complexity-baseline
+      shell: bash
