@@ -15,13 +15,11 @@ runs:
     - name: Use Node.js 14.x
       uses: actions/setup-node@v3
       with:
-          node-version: 14.x
-          cache: 'npm'
-      - name: Install Serverless
-        run: |
-          make install-serverless
-        shell: bash
-      - name: Deploy Lambda Function
-        run: |
-          make deploy-function FUNCTION_DIR="{{ inputs.function-dir}}"
-        shell: bash
+        node-version: 14.x
+        cache: 'npm'
+    - name: Install Serverless
+      run: make install-serverless
+      shell: bash
+    - name: Deploy Lambda Function
+      run: make deploy-function FUNCTION_DIR="{{ inputs.function-dir}}"
+      shell: bash
