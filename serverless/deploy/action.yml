@@ -20,5 +20,5 @@ runs:
       run: make install-serverless
       shell: bash
     - name: Deploy Lambda Function
-      run: make deploy-function FUNCTION_DIR="{{ inputs.function-dir}}"
+      run: make deploy-function FUNCTION_DIR="${{ inputs.function-dir}}"
       shell: bash
