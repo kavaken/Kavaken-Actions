@@ -1,0 +1,43 @@
+name: Code Quality
+on:
+  workflow_call:
+  workflow_dispatch:
+jobs:
+  continuous-integration:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+        cache-dependency-path: '*requirements.txt'
+    - name: Upgrade pip
+      run: pip install --upgrade pip
+    - name: Install wheel
+      run: pip install wheel
+    - name: Install Requirements
+      run: pip install -r requirements.txt
+    - name: Install Dev-Test Requirements
+      run: pip install -r dev_requirements.txt
+    - name: Local Install
+      run: make local-install
+    - name: Run format
+      run: make format
+    - name: Run lint
+      run: make lint
+    - name: Run security
+      run: make security-baseline
+    - name: Run static analysis
+      run: make complexity-baseline
+    - name: Run tests
+      run: make run-unittests
+    - name: Generate coverage
+      run: make create-coverage-report
+    - name: Report code coverage
+      uses: zgosalvez/github-actions-report-lcov@v1
+      with:
+        coverage-files: coverage/*.lcov
+        minimum-coverage: 20
+        artifact-name: code-coverage-report
+        github-token: ${{ secrets.GITHUB_TOKEN }}
