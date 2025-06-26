@@ -1,6 +1,14 @@
 name: Build NodeJS
 
 on:
+  push:
+    branches:
+      - main
+
+  pull_request:
+    branches:
+      - main
+
   workflow_call:
     inputs:
       cache-dependency-path:
@@ -16,7 +24,7 @@ jobs:
   build-nodejs:
     runs-on: ubuntu-latest
     steps:
-      - name: Use Node.js 18
+      - name: Use Node.js ${{ inputs.node-js-version }}
         uses: actions/setup-node@v3
         with:
           cache: npm
