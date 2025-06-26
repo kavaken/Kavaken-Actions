@@ -2,17 +2,18 @@ name: Deploy to Lambda
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
   deploy-to-lambda:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-      - uses: actions/setup-node@v3
+      - name: Use Node.js LTS
+        uses: actions/setup-node@v3
         with:
           cache: npm
           node-version: 'lts/*'

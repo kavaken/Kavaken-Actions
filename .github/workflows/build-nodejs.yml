@@ -2,17 +2,13 @@ name: Build NodeJS
 
 on:
   push:
-    branches:
-      - main
-
+    branches: [ main ]
   pull_request:
-    branches:
-      - main
-
+    branches: [ main ]
   workflow_call:
     inputs:
       cache-dependency-path:
-        description: 'Where is your package.json file'
+        description: 'Where is your package-lock.json file'
         type: string
         default: 'package-lock.json'
       node-js-version:
@@ -24,12 +20,15 @@ jobs:
   build-nodejs:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
       - name: Use Node.js ${{ inputs.node-js-version }}
         uses: actions/setup-node@v3
         with:
           cache: npm
           cache-dependency-path: ${{ inputs.cache-dependency-path }}
-          node-version:       ${{ inputs.node-js-version }}
+          node-version: ${{ inputs.node-js-version }}
 
       - name: Install dependencies
         run: npm ci
