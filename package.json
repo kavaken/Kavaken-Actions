@@ -4,8 +4,8 @@
   "description": "NodeJS project for Kavaken Actions",
   "main": "index.js",
   "scripts": {
-    "build": "npm run build",
-    "deploy-production": "npm run deploy-production"
+    "build": "echo \"No build step defined\"",
+    "deploy-production": "echo \"Define your deploy command here\""
   },
   "author": "",
   "license": "MIT",
