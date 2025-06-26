@@ -1,5 +1,11 @@
 name: Deploy to Lambda
 
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
 jobs:
   deploy-to-lambda:
     runs-on: ubuntu-latest
