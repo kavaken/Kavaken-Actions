@@ -14,9 +14,9 @@ jobs:
 
       - name: Configure git auth for private dependencies
         run: |
-          git config --global url."https://x-access-token:${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"
+          git config --global url."https://x-access-token:${PAT}@github.com/".insteadOf "https://github.com/"
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PAT: ${{ secrets.KAVAKEN_COMMON_READ_PAT }}
 
       - uses: actions/setup-python@v4
         with:
