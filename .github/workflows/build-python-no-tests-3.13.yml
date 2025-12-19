@@ -12,6 +12,11 @@ jobs:
         python-version: '3.13'
         cache: 'pip'
         cache-dependency-path: '*requirements.txt'
+    - name: Configure git auth for private dependencies
+      run: |
+        git config --global url."https://x-access-token:${PAT}@github.com/".insteadOf "https://github.com/"
+      env:
+        PAT: ${{ secrets.KAVAKEN_COMMON_READ_PAT }}
     - name: Upgrade pip
       run: pip install --upgrade pip
     - name: Install wheel
