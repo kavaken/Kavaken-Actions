@@ -1,0 +1,13 @@
+{
+  "name": "kavaken-actions",
+  "version": "1.0.0",
+  "description": "NodeJS project for Kavaken Actions",
+  "main": "index.js",
+  "scripts": {
+    "build": "echo \"No build step defined\"",
+    "deploy-production": "echo \"Define your deploy command here\""
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {}
+}
