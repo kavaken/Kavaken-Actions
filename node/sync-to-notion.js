@@ -1,8 +1,8 @@
   const fs = require("fs");                                                                                                                                                     
-  const path = require("path");
+  const path = require("path");                                                                                                                                               
   const { Client } = require("@notionhq/client");                                                                                                                               
-  const { markdownToBlocks } = require("@tryfabric/martian");                                                                                                                 
-                                                                                                                                                                              
+  const { markdownToBlocks } = require("@tryfabric/martian");                                                                                                                   
+
   const notion = new Client({ auth: process.env.NOTION_API_TOKEN });
   const parentPageId = process.env.NOTION_WORKFLOW_PAGE_ID;
 
@@ -10,6 +10,14 @@
     const match = markdown.match(/^#\s+(.+)$/m);
     if (match) return match[1].trim();
     return null;
+  }
+
+  function getRepoName() {
+    return (process.env.GITHUB_REPOSITORY || "")
+      .split("/")
+      .pop()
+      .replace(/[-_]/g, " ")
+      .replace(/\b\w/g, (c) => c.toUpperCase());
   }
 
   async function findChildPage(parentId, title) {
@@ -38,6 +46,17 @@
     return page.id;
   }
 
+  async function findOrCreatePage(parentId, title) {
+    let pageId = await findChildPage(parentId, title);
+
+    if (!pageId) {
+      console.log(`  Creating "${title}"...`);
+      pageId = await createChildPage(parentId, title);
+    }
+
+    return pageId;
+  }
+
   async function clearPage(pageId) {
     const { results } = await notion.blocks.children.list({
       block_id: pageId,
@@ -59,32 +78,6 @@
     }
   }
 
-  async function syncFile(filePath) {
-    const content = fs.readFileSync(filePath, "utf-8");
-    const title = getTitle(content);
-
-    if (!title) {
-      console.log(`Skipping ${filePath} — no H1 title found.`);
-      return;
-    }
-
-    console.log(`Syncing "${title}"...`);
-
-    let childPageId = await findChildPage(parentPageId, title);
-
-    if (childPageId) {
-      console.log(`  Found existing sub-page, updating...`);
-      await clearPage(childPageId);
-    } else {
-      console.log(`  Creating new sub-page...`);
-      childPageId = await createChildPage(parentPageId, title);
-    }
-
-    const blocks = markdownToBlocks(content);
-    console.log(`  Writing ${blocks.length} blocks...`);
-    await appendBlocks(childPageId, blocks);
-  }
-
   async function main() {
     const changedFiles = (process.env.CHANGED_FILES || "")
       .split("\n")
@@ -96,11 +89,37 @@
       return;
     }
 
-    console.log(`Syncing ${changedFiles.length} changed doc(s): ${changedFiles.join(", ")}`);
+    // Find or create the repo folder page
+    const repoName = getRepoName();
+    console.log(`Repo folder: "${repoName}"`);
+    const repoPageId = await findOrCreatePage(parentPageId, repoName);
 
+    // Sync each changed file as a sub-page under the repo folder
     for (const file of changedFiles) {
       const filePath = path.resolve(process.cwd(), file);
-      await syncFile(filePath);
+      const content = fs.readFileSync(filePath, "utf-8");
+      const title = getTitle(content);
+
+      if (!title) {
+        console.log(`Skipping ${file} — no H1 title found.`);
+        continue;
+      }
+
+      console.log(`Syncing "${title}"...`);
+
+      let docPageId = await findChildPage(repoPageId, title);
+
+      if (docPageId) {
+        console.log(`  Found existing page, updating...`);
+        await clearPage(docPageId);
+      } else {
+        console.log(`  Creating new page...`);
+        docPageId = await createChildPage(repoPageId, title);
+      }
+
+      const blocks = markdownToBlocks(content);
+      console.log(`  Writing ${blocks.length} blocks...`);
+      await appendBlocks(docPageId, blocks);
     }
 
     console.log("Done.");
