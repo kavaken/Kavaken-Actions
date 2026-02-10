@@ -63,10 +63,10 @@ async function main() {
   const repoRoot = process.cwd();
   const files = fs
     .readdirSync(repoRoot)
-    .filter((f) => f.endsWith("_PIPELINE.md"));
+    .filter((f) => f.endsWith("_WORKFLOW.md"));
 
   if (files.length === 0) {
-    console.log("No *_PIPELINE.md files found.");
+    console.log("No *_WORKFLOW.md files found.");
     return;
   }
 
