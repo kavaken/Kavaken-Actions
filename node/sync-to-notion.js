@@ -80,7 +80,7 @@
 
   async function main() {
     const changedFiles = (process.env.CHANGED_FILES || "")
-      .split("\n")
+      .split(",")
       .map((f) => f.trim())
       .filter((f) => f.endsWith("_WORKFLOW.md"));
 
