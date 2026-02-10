@@ -5,10 +5,16 @@ const { markdownToBlocks } = require("@tryfabric/martian");
 
 const notion = new Client({ auth: process.env.NOTION_API_TOKEN });
 const parentPageId = process.env.NOTION_WORKFLOW_PAGE_ID;
-const repoName = process.env.GITHUB_REPOSITORY.split("/")
-  .pop()
-  .replace(/[-_]/g, " ")
-  .replace(/\b\w/g, (c) => c.toUpperCase());
+function getTitle(markdown) {
+  const match = markdown.match(/^#\s+(.+)$/m);
+  if (match) return match[1].trim();
+
+  // Fallback to repo name if no H1 found
+  return process.env.GITHUB_REPOSITORY.split("/")
+    .pop()
+    .replace(/[-_]/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
 
 async function findChildPage(parentId, title) {
   const { results } = await notion.blocks.children.list({
@@ -80,15 +86,18 @@ async function main() {
 
   console.log(`Found ${files.length} pipeline doc(s): ${files.join(", ")}`);
 
+  // Extract title from markdown H1, or fall back to repo name
+  const title = getTitle(combined);
+
   // Find or create a sub-page named after this repo
-  let childPageId = await findChildPage(parentPageId, repoName);
+  let childPageId = await findChildPage(parentPageId, title);
 
   if (childPageId) {
-    console.log(`Found existing sub-page for "${repoName}", updating...`);
+    console.log(`Found existing sub-page for "${title}", updating...`);
     await clearPage(childPageId);
   } else {
-    console.log(`Creating new sub-page for "${repoName}"...`);
-    childPageId = await createChildPage(parentPageId, repoName);
+    console.log(`Creating new sub-page for "${title}"...`);
+    childPageId = await createChildPage(parentPageId, title);
   }
 
   // Convert markdown to Notion blocks and write
