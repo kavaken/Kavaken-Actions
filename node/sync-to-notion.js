@@ -60,7 +60,7 @@ async function appendBlocks(pageId, blocks) {
 
 async function main() {
   // Find all *_PIPELINE.md files in the repo
-  const repoRoot = path.resolve(__dirname, "../..");
+  const repoRoot = process.cwd();
   const files = fs
     .readdirSync(repoRoot)
     .filter((f) => f.endsWith("_PIPELINE.md"));
