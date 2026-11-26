@@ -1,0 +1,60 @@
+name: PR preview comment
+description: >-
+  Posts or updates one comment on the pull request with its preview URL, or strikes it through
+  once the preview is removed. One comment per name, edited in place on every run. Needs
+  pull-requests: write.
+inputs:
+  name:
+    description: What is previewed, e.g. "outages-api preview". Also keys the comment.
+    required: true
+  url:
+    description: Preview URL. Required unless removed is true.
+    required: false
+    default: ""
+  note:
+    description: Extra lines under the URL (how to use the preview), Markdown.
+    required: false
+    default: ""
+  removed:
+    description: "true once the preview is gone (pull request closed)."
+    required: false
+    default: "false"
+runs:
+  using: composite
+  steps:
+    - uses: actions/github-script@v7
+      env:
+        NAME: ${{ inputs.name }}
+        URL: ${{ inputs.url }}
+        NOTE: ${{ inputs.note }}
+        REMOVED: ${{ inputs.removed }}
+      with:
+        script: |
+          const { NAME, URL, NOTE, REMOVED } = process.env;
+          const marker = `<!-- preview: ${NAME} -->`;
+          const { owner, repo } = context.repo;
+          const issue_number = context.payload.pull_request.number;
+          const comments = await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number });
+          const existing = comments.find(c => c.body && c.body.includes(marker));
+          if (REMOVED === 'true') {
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner, repo, comment_id: existing.id,
+                body: `${marker}\n~~${NAME}~~ removed: this PR is closed.`,
+              });
+            }
+            return;
+          }
+          if (!URL) {
+            core.setFailed('url is required unless removed is true');
+            return;
+          }
+          const sha = context.payload.pull_request.head.sha.slice(0, 7);
+          const body = [marker, `**${NAME}:** ${URL}`, '', `Built from ${sha}, merged with the base branch.`, NOTE, 'Removed when this PR is closed.']
+            .filter(line => line !== undefined && line !== null)
+            .join('\n');
+          if (existing) {
+            await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body });
+          } else {
+            await github.rest.issues.createComment({ owner, repo, issue_number, body });
+          }

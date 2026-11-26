@@ -1,0 +1,86 @@
+name: Cloud Run deploy (regular or PR preview)
+description: >-
+  Deploys an already pushed image to a Cloud Run service and returns the URL. With a tag (e.g.
+  pr-12) the new revision gets no traffic and is reachable only at its tag URL, so a pull request
+  gets its own preview without touching what the service serves. Without a tag the revision takes
+  all traffic. Run google-github-actions/auth and setup-gcloud first.
+inputs:
+  service:
+    description: Cloud Run service name.
+    required: true
+  image:
+    description: Image to deploy, including its tag or digest.
+    required: true
+  region:
+    description: Cloud Run region.
+    required: true
+  project:
+    description: Google Cloud project ID.
+    required: true
+  tag:
+    description: Revision tag for a preview, e.g. pr-12. Empty = regular deploy.
+    required: false
+    default: ""
+  flags:
+    description: >-
+      The service's own gcloud run deploy flags, one per line (service account, env vars, secrets,
+      Cloud SQL, scaling, auth, ...). Each line is passed as one argument, so values may contain
+      spaces and commas.
+    required: false
+    default: ""
+outputs:
+  url:
+    description: URL of the deployed revision (the tag URL when a tag is set).
+    value: ${{ steps.url.outputs.url }}
+runs:
+  using: composite
+  steps:
+    - name: Deploy
+      shell: bash
+      env:
+        SERVICE: ${{ inputs.service }}
+        IMAGE: ${{ inputs.image }}
+        REGION: ${{ inputs.region }}
+        PROJECT: ${{ inputs.project }}
+        TAG: ${{ inputs.tag }}
+        FLAGS: ${{ inputs.flags }}
+      run: |
+        ARGS=()
+        while IFS= read -r line; do
+          line="${line#"${line%%[![:space:]]*}"}"   # trim leading spaces
+          line="${line%"${line##*[![:space:]]}"}"   # trim trailing spaces
+          [ -n "$line" ] && ARGS+=("$line")
+        done <<< "$FLAGS"
+
+        if [ -n "$TAG" ]; then
+          ARGS+=(--tag="$TAG")
+          # --no-traffic is refused when the service does not exist yet: the first preview deploy
+          # creates the service, and its default URL then serves that first revision.
+          if gcloud run services describe "$SERVICE" --region="$REGION" --project="$PROJECT" \
+              --format='value(metadata.name)' >/dev/null 2>&1; then
+            ARGS+=(--no-traffic)
+          fi
+        fi
+
+        gcloud run deploy "$SERVICE" --image="$IMAGE" --region="$REGION" --project="$PROJECT" \
+          "${ARGS[@]}" --quiet
+
+    - name: Read the revision URL
+      id: url
+      shell: bash
+      env:
+        SERVICE: ${{ inputs.service }}
+        REGION: ${{ inputs.region }}
+        PROJECT: ${{ inputs.project }}
+        TAG: ${{ inputs.tag }}
+      run: |
+        if [ -n "$TAG" ]; then
+          URL=$(gcloud run services describe "$SERVICE" --region="$REGION" --project="$PROJECT" --format=json \
+            | jq -r --arg tag "$TAG" '.status.traffic[] | select(.tag == $tag) | .url')
+        else
+          URL=$(gcloud run services describe "$SERVICE" --region="$REGION" --project="$PROJECT" \
+            --format='value(status.url)')
+        fi
+        [ -n "$URL" ] || { echo "No URL found for $SERVICE ${TAG:+tag $TAG}"; exit 1; }
+        echo "url=$URL" >> "$GITHUB_OUTPUT"
+        echo "Deployed: $URL" >> "$GITHUB_STEP_SUMMARY"
