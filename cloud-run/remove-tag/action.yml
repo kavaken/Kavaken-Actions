@@ -1,0 +1,37 @@
+name: Cloud Run remove revision tag
+description: >-
+  Removes a revision tag (e.g. a closed pull request's pr-12) from a Cloud Run service, so its
+  preview URL stops answering. Does nothing when the service or tag is not there. Run
+  google-github-actions/auth and setup-gcloud first.
+inputs:
+  service:
+    description: Cloud Run service name.
+    required: true
+  tag:
+    description: Revision tag to remove.
+    required: true
+  region:
+    description: Cloud Run region.
+    required: true
+  project:
+    description: Google Cloud project ID.
+    required: true
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        SERVICE: ${{ inputs.service }}
+        TAG: ${{ inputs.tag }}
+        REGION: ${{ inputs.region }}
+        PROJECT: ${{ inputs.project }}
+      run: |
+        TAGS=$(gcloud run services describe "$SERVICE" --region="$REGION" --project="$PROJECT" \
+          --format=json 2>/dev/null | jq -r '[.status.traffic[]? | .tag // empty] | join(" ")')
+        if [[ " $TAGS " == *" $TAG "* ]]; then
+          gcloud run services update-traffic "$SERVICE" --region="$REGION" --project="$PROJECT" \
+            --remove-tags="$TAG" --quiet
+          echo "Removed $TAG from $SERVICE" >> "$GITHUB_STEP_SUMMARY"
+        else
+          echo "No $TAG on $SERVICE, nothing to remove" >> "$GITHUB_STEP_SUMMARY"
+        fi
